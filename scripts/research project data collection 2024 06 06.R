@@ -95,5 +95,73 @@ crashes <- read.csv(sprintf("https://docs.google.com/uc?id=%s&export=download",
 crime <- read.csv(sprintf("https://docs.google.com/uc?id=%s&export=download",
                             "1Sg7lkf6EioI87dZiGDsn03un8gxT4zw6"))
 
+# 2. Summaries
+summary.calls <- calls %>%
+  group_by(type) %>%
+  summarise(count = n()) %>%
+  mutate(percentage = round(count/sum(count)*100,2))
+
+summary.crime <- crime %>%
+  group_by(type) %>%
+  summarise(count = n()) %>%
+  mutate(percentage = round(count/sum(count)*100,2))
+
+summary.arrests <- arrests %>%
+  group_by(crime.code.description) %>%
+  summarise(count = n()) %>%
+  mutate(percentage = round(count/sum(count)*100,2))
+
+summary.crashes <- crashes %>%
+  group_by(type) %>%
+  summarise(count = n()) %>%
+  mutate(percentage = round(count/sum(count)*100,2))
+
+# 3. Select/filter for your activity type
+### using larceny as an example
+subset.calls <- subset(calls, calls$type == 'LARCENY' | calls$type == 'SHOPLIFTER')
+
+subset.crime <- subset(crime, crime$type == 'Larceny Report' |
+                         crime$type == 'Larceny in Progress' |
+                         crime$type == 'Shoplifter Report' |
+                         crime$type == 'Shoplifte Resisting' |
+                         crime$type == 'Shoplifter in Custody')
+
+subset.arrests <- subset(arrests, arrests$crime.code.description == 'LARCENY:OTHER' |
+                           arrests$crime.code.description == 'SHOPLIFTING')
+
+# 4. add a dataset column
+subset.calls$source <- "Calls"
+subset.crime$source <- "Crime"
+subset.arrests$source <- "Arrests"
+
+# 5. remove extra columns
+subset.new.calls <- subset.calls[c(1:4,6:10)]
+subset.new.crime <- subset.crime[c(1:2,6,11:12,15:18)]
+subset.new.arrests <- subset.arrests[c(1:2,5,7:8,10:13)]
+
+# 6. rename common columns
+colnames(subset.new.calls)
+colnames(subset.new.crime)
+colnames(subset.new.arrests)
+
+names(subset.new.crime) <- c("lat", "lon", "type", "date", "time", "hour", "year", 
+                             "ID", "source")
+names(subset.new.arrests) <- c("lat", "lon", "type", "date", "time", "hour", "year",
+                               "ID", "source")
+
+# 7. merge the tables together
+event.data <- rbind(subset.new.calls, subset.new.crime, subset.new.arrests)
+
+### If you wanted to analyze traffic-event data, you would probably incorporate:
+# calls for traffic stops, accident-no injury, disabled, tow, etc.....
+# the entire crashes dataset
+# crimes for Hit & Run, Traffic Stop, etc....
+# arrests for DUI
+
+# 8. Exporting!
+# Mac (replace YOUR USER NAME with your actual computer's user name)
+write.csv(event.data, "/Users/YOUR USER NAME/Downloads/event.data.csv", row.names = FALSE)
+# Windows (replace YOUR USER NAME with your actual computer's user name)
+write.csv(event.data, "C:/Users/YOUR USER NAME/Downloads/events.data.csv", row.names = FALSE)
 
 
