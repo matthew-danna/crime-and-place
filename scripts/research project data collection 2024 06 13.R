@@ -5,9 +5,11 @@
 install.packages('tidyverse')
 install.packages('tidycensus')
 install.packages('osmdata')
+install.packages('tigris')
 library(tidycensus)
 library(tidyverse)
 library(osmdata)
+library(tigris)
 
 ############
 ############ PLACE-BASED DATA
@@ -129,6 +131,16 @@ subset.crime <- subset(crime, crime$type == 'Larceny Report' |
 subset.arrests <- subset(arrests, arrests$crime.code.description == 'LARCENY:OTHER' |
                            arrests$crime.code.description == 'SHOPLIFTING')
 
+### using robbery as an example
+subset.calls <- subset(calls, calls$type == 'ROBBERY' |
+                         calls$type == 'CARJACKING')
+subset.crime <- subset(crime, crime$type == 'Carjacking' |
+                         crime$type == 'Robbery Attempted' |
+                         crime$type == 'Robbery Report' |
+                         crime$type == 'Robbery in Progress')
+subset.arrests <- subset(arrests, arrests$crime.code.description == 'POCKET PICKING' |
+                           arrests$crime.code.description == 'ROBBERY')
+
 # 4. add a dataset column
 subset.calls$source <- "Calls"
 subset.crime$source <- "Crime"
@@ -149,6 +161,10 @@ names(subset.new.crime) <- c("lat", "lon", "type", "date", "time", "hour", "year
 names(subset.new.arrests) <- c("lat", "lon", "type", "date", "time", "hour", "year",
                                "ID", "source")
 
+colnames(subset.new.calls)
+colnames(subset.new.crime)
+colnames(subset.new.arrests)
+
 # 7. merge the tables together
 event.data <- rbind(subset.new.calls, subset.new.crime, subset.new.arrests)
 
@@ -158,10 +174,69 @@ event.data <- rbind(subset.new.calls, subset.new.crime, subset.new.arrests)
 # crimes for Hit & Run, Traffic Stop, etc....
 # arrests for DUI
 
-# 8. Exporting!
+# 8. Two faceted density maps
+
+# roads
+va.roads <- roads("VA", "Fairfax City")
+
+# city outline
+va.outline <- county_subdivisions("VA", "Fairfax City")
+
+# remove missing locations
+events <- subset(event.data, !is.na(event.data$lat))
+
+# transparent points
+ggplot() +
+  geom_point(aes(x = lon, y = lat), data = events, color = "orange", alpha = 0.2)
+
+# polygons
+ggplot() +
+  stat_density2d(aes(x = lon, y = lat, fill = ..level.., alpha = 0.01),  
+                 size = 0.01, bins = 2, data = events, geom = "polygon") +
+  theme(legend.position = "none")
+
+# hexes
+ggplot() +
+  geom_hex(aes(x = lon, y = lat), data = events, bins = 15) +
+  scale_fill_continuous(type = "viridis")
+
+# add formatting
+ggplot() +
+  geom_sf(data = va.outline) +
+  geom_hex(aes(x = lon, y = lat), data = events, bins = 15) +
+  scale_fill_continuous(type = "viridis") +
+  geom_sf(data = va.roads, color = "grey", linewidth = 0.25) +
+  theme_bw() +
+  ggtitle("Robbery Hotspots, 2007-2024 YTD")
+
+# 8a. Facet map by data source
+ggplot() +
+  geom_sf(data = va.outline) +
+  geom_hex(aes(x = lon, y = lat), data = events, bins = 15) +
+  scale_fill_continuous(type = "viridis") +
+  geom_sf(data = va.roads, color = "grey", linewidth = 0.25) +
+  theme_bw() +
+  ggtitle("Robbery Hotspots, 2007-2024 YTD") +
+  facet_wrap(~ source, nrow = 3)
+
+# 8b. Facet map by year
+ggplot() +
+  geom_sf(data = va.outline) +
+  geom_hex(aes(x = lon, y = lat), data = events, bins = 15) +
+  scale_fill_continuous(type = "viridis") +
+  geom_sf(data = va.roads, color = "grey", linewidth = 0.25) +
+  theme_bw() +
+  ggtitle("Robbery Hotspots, 2007-2024 YTD") +
+  facet_wrap(~ year)
+
+
+# 9. Exporting!
+# first, choose your dataset
+events.subset <- subset(events, events$source == 'Calls')
+
 # Mac (replace YOUR USER NAME with your actual computer's user name)
-write.csv(event.data, "/Users/YOUR USER NAME/Downloads/event.data.csv", row.names = FALSE)
+write.csv(events.subset, "/Users/matthewdanna/Downloads/events.data.csv", row.names = FALSE)
 # Windows (replace YOUR USER NAME with your actual computer's user name)
-write.csv(event.data, "C:/Users/YOUR USER NAME/Downloads/events.data.csv", row.names = FALSE)
+write.csv(events.subset, "C:/Users/YOUR USER NAME/Downloads/events.data.csv", row.names = FALSE)
 
 
