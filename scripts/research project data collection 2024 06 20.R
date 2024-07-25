@@ -275,6 +275,9 @@ ggplot() +
 # first, choose your dataset
 events.subset <- subset(events, events$source == 'Crime')
 
+# and potentially filter down some years
+events.subset <- subset(events, events$source == 'Crime' & events$date > 2019)
+
 # remake the year facet map using only the data for further analysis
 ggplot() +
   geom_sf(data = va.outline) +
