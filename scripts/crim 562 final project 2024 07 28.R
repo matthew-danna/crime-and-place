@@ -254,3 +254,62 @@ forecasts <- forecasts %>% left_join(forecasts.tmp, by = "ID")
 
 forecasts$TODAY <- forecasts$TOTAL - forecasts$YESTERDAY
 forecasts <- forecasts[c(2,3,6)]
+
+#####
+#####
+##### EXAMPLE FOR WORKING WITH ONE CALL TYPE COUNTING EVENTS BY DAY
+##### FROM CLASS ON 8/1
+#####
+
+# get the data
+calls <- read.csv(sprintf("https://docs.google.com/uc?id=%s&export=download",
+                          "1gniFP35GEfxycgpKGHAzkgSYmjTteTKm"))
+
+# format the date
+calls$date <- as.Date(calls$date)
+
+# subset to trespasses
+calls.trespass <- subset(calls, calls$type == 'TRESPASSING')
+
+# subset Fairfax Circle
+calls.trespass.fc <- subset(calls.trespass, calls.trespass$lat > 38.859298 & 
+                              calls.trespass$lon > -77.283521)
+# export the data for ArcGIS
+write.csv(calls.trespass.fc, "/Users/matthewdanna/Downloads/calls 2024 08 01.csv",
+          row.names = FALSE)
+
+# group by date
+calls.trespass.fc.day <- calls.trespass.fc %>%
+  group_by(date) %>%
+  summarise(COUNT = n())
+
+# filling in blank dates
+calls.trespass.fc.day <- calls.trespass.fc.day %>%
+  complete(date = seq.Date(min(date), max(date), by = "day")) %>%
+  mutate(WEEKDAY = lubridate::wday(date, label = T, week_start = 1), 
+         MONTH = lubridate::month(date, label = T, abbr = F),
+         WEEK = isoweek(date),
+         DAY = day(date),
+         YEAR = year(date))
+
+# replacing NAs with 0s
+calls.trespass.fc.day <- replace(calls.trespass.fc.day, 
+                                 is.na(calls.trespass.fc.day), 0)
+
+# trespasses in Fairfax Circle DURING the operation
+calls.trespass.fc.during <- subset(calls.trespass.fc.day, 
+                                   calls.trespass.fc.day$date > '2023-08-31' &
+                                     calls.trespass.fc.day$date < '2023-12-01')
+
+# trespasses in Fairfax Circle BEFORE the operation
+calls.trespass.fc.before <- subset(calls.trespass.fc.day, 
+                                   calls.trespass.fc.day$date > '2023-01-31' &
+                                     calls.trespass.fc.day$date < '2023-09-01')
+
+# trespasses in Fairfax Circle AFTER the operation
+calls.trespass.fc.after <- subset(calls.trespass.fc.day, 
+                                  calls.trespass.fc.day$date > '2023-11-30')
+
+
+
+
