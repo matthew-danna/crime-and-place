@@ -311,5 +311,15 @@ calls.trespass.fc.after <- subset(calls.trespass.fc.day,
                                   calls.trespass.fc.day$date > '2023-11-30')
 
 
+ggplot(sum.calls, aes(x = year.month, y = call.count)) + 
+  geom_bar(stat = "identity") +
+  theme(axis.text.x= element_text(angle = 90)) +
+  geom_vline()
+  geom_vline(xintercept = '2023-09', colour = "blue") +
+  geom_vline(xintercept = '2023-11', color = "red")
 
+ggplot() +
+  geom_bar(data = sum.calls, aes(x = year.month, y = call.count))
+  geom_line(data = www, aes(x=, y =)) +
+  geom_line()
 
