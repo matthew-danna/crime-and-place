@@ -311,6 +311,7 @@ calls.trespass.fc.after <- subset(calls.trespass.fc.day,
                                   calls.trespass.fc.day$date > '2023-11-30')
 
 
+# graphing call activity with line breaks
 ggplot(sum.calls, aes(x = year.month, y = call.count)) + 
   geom_bar(stat = "identity") +
   theme(axis.text.x= element_text(angle = 90)) +
